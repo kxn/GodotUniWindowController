@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://cqlhfhe8dqgvs"]
+
+[ext_resource type="Script" path="res://addons/uniwinc/scenes/object_drag_handle.gd" id="1_handle_script"]
+
+[node name="ObjectDragHandle" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_handle_script")

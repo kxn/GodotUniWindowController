@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfxxku7xjpuuk"]
+
+[ext_resource type="Script" path="res://addons/uniwinc/scenes/uni_window_controller.gd" id="1_r8j5v"]
+
+[node name="UniWindowController" type="Node"]
+script = ExtResource("1_r8j5v")
+is_transparent = false
+is_borderless = true
+is_topmost = false
+alpha_value = 1.0
+allow_drop_files = false
+auto_attach = true
+auto_detach = true

@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3 uid="uid://15hyfhryo8j7"]
+
+[ext_resource type="PackedScene" uid="uid://bfxxku7xjpuuk" path="res://addons/uniwinc/scenes/uni_window_controller.tscn" id="1_0ilta"]
+[ext_resource type="Texture2D" uid="uid://dgip0duk6y6o" path="res://demo/girl.png" id="2_b4wve"]
+[ext_resource type="PackedScene" uid="uid://bxt4nr1j8nwfe" path="res://addons/uniwinc/scenes/object_drag_manager.tscn" id="2_o85nf"]
+[ext_resource type="PackedScene" uid="uid://cqlhfhe8dqgvs" path="res://addons/uniwinc/scenes/object_drag_handle.tscn" id="3_6qum4"]
+
+[node name="Demo" type="Node2D"]
+
+[node name="UniWindowController" parent="." instance=ExtResource("1_0ilta")]
+is_transparent = true
+is_topmost = true
+use_all_monitors = true
+allow_drop_files = true
+is_click_through = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="ObjectDragManager" parent="CanvasLayer" instance=ExtResource("2_o85nf")]
+
+[node name="Girl" type="Node2D" parent="CanvasLayer/ObjectDragManager"]
+position = Vector2(270, 264)
+
+[node name="Sprite2D" type="Sprite2D" parent="CanvasLayer/ObjectDragManager/Girl"]
+position = Vector2(264, 310)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_b4wve")
+
+[node name="ObjectDragHandle" parent="CanvasLayer/ObjectDragManager/Girl" instance=ExtResource("3_6qum4")]
+
+[node name="TwoGirl" type="Node2D" parent="CanvasLayer/ObjectDragManager"]
+position = Vector2(662, 262)
+
+[node name="ObjectDragHandle" parent="CanvasLayer/ObjectDragManager/TwoGirl" instance=ExtResource("3_6qum4")]
+
+[node name="Sprite2D3" type="Sprite2D" parent="CanvasLayer/ObjectDragManager/TwoGirl"]
+position = Vector2(697, 280)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_b4wve")
+
+[node name="Sprite2D2" type="Sprite2D" parent="CanvasLayer/ObjectDragManager/TwoGirl"]
+position = Vector2(307, 275)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_b4wve")

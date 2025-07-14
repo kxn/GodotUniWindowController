@@ -1,0 +1,6 @@
+/venv/
+/godot-cpp/
+/src/
+*.dblite
+SConstruct
+*.md

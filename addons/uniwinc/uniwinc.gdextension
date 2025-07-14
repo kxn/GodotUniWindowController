@@ -1,0 +1,11 @@
+[configuration]
+entry_symbol = "gdextension_init"
+compatibility_minimum = "4.3"
+
+[libraries]
+linux.debug.x86_64 = "res://addons/uniwinc/bin/linux/libuniwincgd.so"
+linux.release.x86_64 = "res://addons/uniwinc/bin/linux/libuniwincgd.so"
+windows.debug.x86_64 = "res://addons/uniwinc/bin/windows/libuniwincgd.dll"
+windows.release.x86_64 = "res://addons/uniwinc/bin/windows/libuniwincgd.dll"
+macos.debug = "res://addons/uniwinc/bin/macos/libuniwincgd.dylib"
+macos.release = "res://addons/uniwinc/bin/macos/libuniwincgd.dylib"
