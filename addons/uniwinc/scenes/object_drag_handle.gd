@@ -14,6 +14,10 @@ class_name ObjectDragHandle
 @export var show_debug_info: bool = false
 @export_range(0.0, 1.0, 0.01) var opacity_threshold: float = 0.1
 
+@export_group("Mouse Events")
+@export var enable_mouse_events: bool = true
+@export var enable_hover_events: bool = true
+
 @export_group("Size Settings")
 @export var auto_size_enabled: bool = true
 @export var size_update_interval: float = 0.1  # 自动更新大小的间隔（秒）
@@ -26,11 +30,20 @@ var _drag_start_mouse_pos: Vector2
 var _manager: ObjectDragManager  # 管理器引用
 var _size_update_timer: Timer
 
+# 鼠标事件状态
+var _mouse_is_over: bool = false
+var _last_mouse_position: Vector2 = Vector2.ZERO
+
 # 信号定义
 signal drag_started()
 signal dragging(position: Vector2)
 signal drag_ended()
 signal size_changed(new_size: Vector2)
+
+# 鼠标事件信号
+signal handle_mouse_event(event: InputEvent)
+signal handle_mouse_entered()
+signal handle_mouse_exited()
 
 func _ready():
 	# 确保不处理鼠标事件（由管理器处理）
@@ -109,6 +122,49 @@ func end_drag_from_manager():
 		var debug_parent = get_parent()
 		var parent_pos = debug_parent.position if debug_parent else Vector2.ZERO
 		print("ObjectDragHandle: 结束拖拽 ", name, " 父节点最终位置 ", parent_pos)
+
+## 鼠标事件处理方法（由管理器调用）
+func handle_mouse_event_from_manager(event: InputEvent, local_pos: Vector2):
+	if not enable_mouse_events:
+		return
+		
+	_last_mouse_position = local_pos
+	
+	# 统一发出鼠标事件信号，让使用者自己处理不同事件类型
+	handle_mouse_event.emit(event)
+	
+	if show_debug_info:
+		var event_type = ""
+		if event is InputEventMouseButton:
+			var button_event = event as InputEventMouseButton
+			var action = "按下" if button_event.pressed else "释放"
+			event_type = "鼠标%s(%d)" % [action, button_event.button_index]
+		elif event is InputEventMouseMotion:
+			if Engine.get_process_frames() % 60 == 0:  # 限制输出频率
+				event_type = "鼠标移动"
+		
+		if event_type != "":
+			print("ObjectDragHandle: %s %s 位置:%s" % [event_type, name, local_pos])
+
+func handle_mouse_enter_from_manager():
+	if not enable_hover_events or _mouse_is_over:
+		return
+		
+	_mouse_is_over = true
+	handle_mouse_entered.emit()
+	
+	if show_debug_info:
+		print("ObjectDragHandle: 鼠标进入 ", name)
+
+func handle_mouse_exit_from_manager():
+	if not enable_hover_events or not _mouse_is_over:
+		return
+		
+	_mouse_is_over = false
+	handle_mouse_exited.emit()
+	
+	if show_debug_info:
+		print("ObjectDragHandle: 鼠标离开 ", name)
 
 ## 检查是否可以开始拖拽
 func _can_start_drag() -> bool:
@@ -427,6 +483,13 @@ func is_dragging() -> bool:
 
 func get_manager() -> ObjectDragManager:
 	return _manager
+
+## 鼠标状态查询方法
+func is_mouse_over() -> bool:
+	return _mouse_is_over
+
+func get_last_mouse_position() -> Vector2:
+	return _last_mouse_position
 
 ## 公共API方法
 func start_drag_manually(mouse_pos: Vector2) -> bool:

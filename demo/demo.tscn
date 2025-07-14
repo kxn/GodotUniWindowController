@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://15hyfhryo8j7"]
+[gd_scene load_steps=6 format=3 uid="uid://15hyfhryo8j7"]
 
 [ext_resource type="PackedScene" uid="uid://bfxxku7xjpuuk" path="res://addons/uniwinc/scenes/uni_window_controller.tscn" id="1_0ilta"]
 [ext_resource type="Texture2D" uid="uid://dgip0duk6y6o" path="res://demo/girl.png" id="2_b4wve"]
 [ext_resource type="PackedScene" uid="uid://bxt4nr1j8nwfe" path="res://addons/uniwinc/scenes/object_drag_manager.tscn" id="2_o85nf"]
 [ext_resource type="PackedScene" uid="uid://cqlhfhe8dqgvs" path="res://addons/uniwinc/scenes/object_drag_handle.tscn" id="3_6qum4"]
+[ext_resource type="Script" path="res://demo/girl.gd" id="3_im2kc"]
 
 [node name="Demo" type="Node2D"]
 
@@ -20,6 +21,7 @@ is_click_through = true
 
 [node name="Girl" type="Node2D" parent="CanvasLayer/ObjectDragManager"]
 position = Vector2(270, 264)
+script = ExtResource("3_im2kc")
 
 [node name="Sprite2D" type="Sprite2D" parent="CanvasLayer/ObjectDragManager/Girl"]
 position = Vector2(264, 310)
@@ -30,6 +32,7 @@ texture = ExtResource("2_b4wve")
 
 [node name="TwoGirl" type="Node2D" parent="CanvasLayer/ObjectDragManager"]
 position = Vector2(662, 262)
+script = ExtResource("3_im2kc")
 
 [node name="ObjectDragHandle" parent="CanvasLayer/ObjectDragManager/TwoGirl" instance=ExtResource("3_6qum4")]
 
@@ -42,3 +45,14 @@ texture = ExtResource("2_b4wve")
 position = Vector2(307, 275)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_b4wve")
+
+[connection signal="drag_ended" from="CanvasLayer/ObjectDragManager/Girl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/Girl" method="_on_object_drag_handle_drag_ended"]
+[connection signal="drag_started" from="CanvasLayer/ObjectDragManager/Girl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/Girl" method="_on_object_drag_handle_drag_started"]
+[connection signal="handle_mouse_entered" from="CanvasLayer/ObjectDragManager/Girl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/Girl" method="_on_object_drag_handle_handle_mouse_entered"]
+[connection signal="handle_mouse_event" from="CanvasLayer/ObjectDragManager/Girl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/Girl" method="_on_object_drag_handle_handle_mouse_event"]
+[connection signal="handle_mouse_exited" from="CanvasLayer/ObjectDragManager/Girl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/Girl" method="_on_object_drag_handle_handle_mouse_exited"]
+[connection signal="drag_ended" from="CanvasLayer/ObjectDragManager/TwoGirl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/TwoGirl" method="_on_object_drag_handle_drag_ended"]
+[connection signal="drag_started" from="CanvasLayer/ObjectDragManager/TwoGirl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/TwoGirl" method="_on_object_drag_handle_drag_started"]
+[connection signal="handle_mouse_entered" from="CanvasLayer/ObjectDragManager/TwoGirl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/TwoGirl" method="_on_object_drag_handle_handle_mouse_entered"]
+[connection signal="handle_mouse_event" from="CanvasLayer/ObjectDragManager/TwoGirl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/TwoGirl" method="_on_object_drag_handle_handle_mouse_event"]
+[connection signal="handle_mouse_exited" from="CanvasLayer/ObjectDragManager/TwoGirl/ObjectDragHandle" to="CanvasLayer/ObjectDragManager/TwoGirl" method="_on_object_drag_handle_handle_mouse_exited"]

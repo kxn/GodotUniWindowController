@@ -11,6 +11,9 @@ var object_drag_handles: Array[ObjectDragHandle] = []
 var _main_controller  # 主窗口控制器引用
 var _current_dragging_handle: ObjectDragHandle = null
 
+# 鼠标事件状态跟踪
+var _current_hover_handle: ObjectDragHandle = null
+
 ## 初始化
 func _ready():
 	# 设置为全屏接收所有鼠标事件
@@ -91,15 +94,29 @@ func _gui_input(event: InputEvent):
 	if Engine.is_editor_hint():
 		return
 		
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_handle_mouse_press(event.global_position)
-		else:
-			_handle_mouse_release()
+	# 处理鼠标按钮事件
+	if event is InputEventMouseButton:
+		_handle_mouse_button_event(event)
+	# 处理鼠标移动事件（包括悬停状态更新）
 	elif event is InputEventMouseMotion:
-		_handle_mouse_motion(event.global_position)
+		_handle_mouse_motion_event(event)
 
-func _handle_mouse_press(global_pos: Vector2):
+func _handle_mouse_button_event(event: InputEventMouseButton):
+	var global_pos = event.global_position
+	
+	# 左键按下时处理拖拽开始（现有逻辑）
+	if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_handle_drag_start(global_pos)
+	# 左键释放时处理拖拽结束（现有逻辑）
+	elif event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		_handle_mouse_release()
+	
+	# 分发鼠标按钮事件给当前悬停的 handle
+	if _current_hover_handle:
+		var local_pos = _get_local_position(_current_hover_handle, global_pos)
+		_current_hover_handle.handle_mouse_event_from_manager(event, local_pos)
+
+func _handle_drag_start(global_pos: Vector2):
 	# 依次检查每个ObjectDragHandle（按优先级）
 	for i in range(object_drag_handles.size()):
 		var handle = object_drag_handles[i]
@@ -109,9 +126,50 @@ func _handle_mouse_press(global_pos: Vector2):
 			accept_event()
 			return
 
-func _handle_mouse_motion(global_pos: Vector2):
+func _handle_mouse_motion_event(event: InputEventMouseMotion):
+	var global_pos = event.global_position
+	
+	# 更新拖拽状态（现有逻辑）
 	if _current_dragging_handle and _current_dragging_handle.is_dragging():
 		_current_dragging_handle.update_drag_from_manager(global_pos)
+	
+	# 更新悬停状态
+	_update_hover_state(global_pos)
+	
+	# 分发鼠标移动事件给当前悬停的 handle
+	if _current_hover_handle:
+		var local_pos = _get_local_position(_current_hover_handle, global_pos)
+		_current_hover_handle.handle_mouse_event_from_manager(event, local_pos)
+
+func _update_hover_state(global_pos: Vector2):
+	var new_hover_handle: ObjectDragHandle = null
+	
+	# 按优先级查找当前鼠标位置对应的 handle
+	for handle in object_drag_handles:
+		if _should_handle_mouse_event(handle, global_pos):
+			new_hover_handle = handle
+			break
+	
+	# 处理悬停状态变化
+	if new_hover_handle != _current_hover_handle:
+		# 发出 mouse_exited 信号
+		if _current_hover_handle:
+			_current_hover_handle.handle_mouse_exit_from_manager()
+		
+		# 发出 mouse_entered 信号
+		if new_hover_handle:
+			new_hover_handle.handle_mouse_enter_from_manager()
+		
+		_current_hover_handle = new_hover_handle
+
+func _get_local_position(handle: ObjectDragHandle, global_pos: Vector2) -> Vector2:
+	# 将全局坐标转换为handle的本地坐标
+	var handle_global_pos = handle.global_position
+	return global_pos - handle_global_pos
+
+func _should_handle_mouse_event(handle: ObjectDragHandle, global_pos: Vector2) -> bool:
+	# 复用现有的透明检测逻辑
+	return _should_handle_drag(handle, global_pos)
 
 func _handle_mouse_release():
 	if _current_dragging_handle and _current_dragging_handle.is_dragging():
@@ -155,6 +213,9 @@ func get_drag_handles_count() -> int:
 
 func get_current_dragging_handle() -> ObjectDragHandle:
 	return _current_dragging_handle
+
+func get_current_hover_handle() -> ObjectDragHandle:
+	return _current_hover_handle
 
 ## 调试信息
 func _input(event: InputEvent):

@@ -594,6 +594,209 @@ GameObject
 
 重构已就绪，可以投入使用。
 
+## 🆕 鼠标事件信号扩展需求
+
+### 需求描述
+
+为现有的 ObjectDragHandle 系统添加鼠标事件信号支持，类似 Godot 的 InputEvent 机制：
+- `mouse_button_down` 和 `mouse_button_up` 事件
+- `mouse_motion` 事件  
+- `mouse_entered` 和 `mouse_exited` 事件
+
+**关键要求**：只有鼠标在对象的不透明区域时才发出这些信号，与拖拽触发条件完全一致。
+
+### 技术分析
+
+#### 现有系统优势
+1. **完整的事件处理架构**：ObjectDragManager 已实现全屏事件捕获和分发
+2. **精确的透明检测**：现有的 `is_self_opaque_at_position()` 机制可直接复用
+3. **优先级处理机制**：Z-index 和场景树顺序的优先级系统已成熟
+4. **坐标转换系统**：全局坐标到本地坐标的转换逻辑已完善
+
+#### 实现策略
+复用现有的事件处理管道，在 ObjectDragManager 中扩展事件分发逻辑，在 ObjectDragHandle 中添加新的信号和状态跟踪。
+
+### 详细实现方案
+
+#### 1. ObjectDragHandle 扩展
+
+**新增信号定义**：
+```gdscript
+# 鼠标事件信号
+signal mouse_button_down(event: InputEventMouseButton)
+signal mouse_button_up(event: InputEventMouseButton)
+signal mouse_motion(event: InputEventMouseMotion)
+signal mouse_entered()
+signal mouse_exited()
+```
+
+**新增状态跟踪**：
+```gdscript
+# 鼠标悬停状态
+var _mouse_is_over: bool = false
+var _last_mouse_position: Vector2 = Vector2.ZERO
+
+# 配置选项
+@export_group("Mouse Events")
+@export var enable_mouse_events: bool = true
+@export var enable_hover_events: bool = true
+```
+
+**新增事件处理方法**：
+```gdscript
+## 由 Manager 调用的鼠标事件处理方法
+func handle_mouse_button_from_manager(event: InputEventMouseButton, local_pos: Vector2):
+    if enable_mouse_events:
+        if event.pressed:
+            mouse_button_down.emit(event)
+        else:
+            mouse_button_up.emit(event)
+
+func handle_mouse_motion_from_manager(event: InputEventMouseMotion, local_pos: Vector2):
+    if enable_mouse_events:
+        _last_mouse_position = local_pos
+        mouse_motion.emit(event)
+
+func handle_mouse_enter_from_manager():
+    if enable_hover_events and not _mouse_is_over:
+        _mouse_is_over = true
+        mouse_entered.emit()
+
+func handle_mouse_exit_from_manager():
+    if enable_hover_events and _mouse_is_over:
+        _mouse_is_over = false
+        mouse_exited.emit()
+```
+
+#### 2. ObjectDragManager 扩展
+
+**悬停状态跟踪**：
+```gdscript
+# 当前悬停的 handle
+var _current_hover_handle: ObjectDragHandle = null
+```
+
+**事件分发逻辑扩展**：
+```gdscript
+func _gui_input(event: InputEvent):
+    if Engine.is_editor_hint():
+        return
+        
+    # 处理鼠标按钮事件
+    if event is InputEventMouseButton:
+        _handle_mouse_button_event(event)
+    # 处理鼠标移动事件（包括悬停状态更新）
+    elif event is InputEventMouseMotion:
+        _handle_mouse_motion_event(event)
+
+func _handle_mouse_button_event(event: InputEventMouseButton):
+    var global_pos = event.global_position
+    
+    if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+        # 拖拽开始逻辑（现有）
+        _handle_drag_start(global_pos)
+    
+    # 分发鼠标按钮事件给当前悬停的 handle
+    if _current_hover_handle:
+        var local_pos = _get_local_position(_current_hover_handle, global_pos)
+        _current_hover_handle.handle_mouse_button_from_manager(event, local_pos)
+
+func _handle_mouse_motion_event(event: InputEventMouseMotion):
+    var global_pos = event.global_position
+    
+    # 更新拖拽状态（现有逻辑）
+    if _current_dragging_handle:
+        _current_dragging_handle.update_drag_from_manager(global_pos)
+    
+    # 更新悬停状态
+    _update_hover_state(global_pos)
+    
+    # 分发鼠标移动事件给当前悬停的 handle
+    if _current_hover_handle:
+        var local_pos = _get_local_position(_current_hover_handle, global_pos)
+        _current_hover_handle.handle_mouse_motion_from_manager(event, local_pos)
+
+func _update_hover_state(global_pos: Vector2):
+    var new_hover_handle: ObjectDragHandle = null
+    
+    # 按优先级查找当前鼠标位置对应的 handle
+    for handle in object_drag_handles:
+        if _should_handle_mouse_event(handle, global_pos):
+            new_hover_handle = handle
+            break
+    
+    # 处理悬停状态变化
+    if new_hover_handle != _current_hover_handle:
+        # 发出 mouse_exited 信号
+        if _current_hover_handle:
+            _current_hover_handle.handle_mouse_exit_from_manager()
+        
+        # 发出 mouse_entered 信号
+        if new_hover_handle:
+            new_hover_handle.handle_mouse_enter_from_manager()
+        
+        _current_hover_handle = new_hover_handle
+
+func _should_handle_mouse_event(handle: ObjectDragHandle, global_pos: Vector2) -> bool:
+    # 复用现有的透明检测逻辑
+    return _should_handle_drag(handle, global_pos)
+```
+
+### 实现步骤
+
+#### 第一步：扩展 ObjectDragHandle
+1. ✅ 添加新的信号定义
+2. ✅ 添加鼠标状态跟踪变量  
+3. ✅ 实现事件处理方法
+4. ✅ 添加配置选项
+
+#### 第二步：扩展 ObjectDragManager
+1. ✅ 添加悬停状态跟踪
+2. ✅ 扩展 `_gui_input()` 方法
+3. ✅ 实现悬停状态更新逻辑
+4. ✅ 实现事件分发方法
+
+#### 第三步：测试和优化
+1. ⏳ 更新 demo 场景进行测试
+2. ⏳ 验证事件触发的准确性
+3. ⏳ 确保与现有拖拽功能无冲突
+4. ⏳ 性能优化（避免频繁的透明检测）
+
+### 设计优势
+
+1. **最小侵入性**：复用现有的事件处理管道和透明检测逻辑
+2. **事件一致性**：鼠标事件和拖拽事件使用完全相同的触发条件
+3. **性能友好**：避免重复的坐标转换和透明检测计算
+4. **易于使用**：提供类似 Godot 原生 Control 节点的鼠标事件接口
+
+### 使用场景示例
+
+#### 场景1：鼠标悬停效果
+```gdscript
+# 连接信号
+drag_handle.mouse_entered.connect(_on_mouse_entered)
+drag_handle.mouse_exited.connect(_on_mouse_exited)
+
+func _on_mouse_entered():
+    # 改变鼠标指针或添加悬停效果
+    Input.set_default_cursor_shape(Input.CURSOR_MOVE)
+
+func _on_mouse_exited():
+    # 恢复默认鼠标指针
+    Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+```
+
+#### 场景2：右键菜单
+```gdscript
+# 连接信号
+drag_handle.mouse_button_down.connect(_on_mouse_button_down)
+
+func _on_mouse_button_down(event: InputEventMouseButton):
+    if event.button_index == MOUSE_BUTTON_RIGHT:
+        # 显示右键菜单
+        show_context_menu(event.global_position)
+```
+
 ### 核心发现：Godot事件传递机制限制
 
 **调研结论**：Godot的Control兄弟节点间**不会自动传递**鼠标事件。根据官方文档：
