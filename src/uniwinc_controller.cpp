@@ -1,6 +1,5 @@
 #include "uniwinc_controller.h"
 #include "uniwinc_core.h"
-#include "uniwinc_message_queue.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -131,7 +130,6 @@ void UniWindowController::_bind_methods() {
 
 UniWindowController::UniWindowController() {
     g_controller_instance = this;
-    MessageQueue::initialize();
 }
 
 UniWindowController::~UniWindowController() {
@@ -139,7 +137,6 @@ UniWindowController::~UniWindowController() {
         g_controller_instance = nullptr;
     }
     _cleanup_native();
-    MessageQueue::cleanup();
 }
 
 void UniWindowController::_ready() {
@@ -151,9 +148,6 @@ void UniWindowController::_process(double delta) {
     if (!_is_initialized) {
         return;
     }
-    
-    // 处理其他消息队列中的事件（不包括drop files）
-    _process_messages();
     
     // 定期更新状态
     _update_from_native();
@@ -381,68 +375,31 @@ void UniWindowController::_on_files_dropped(const wchar_t* file_paths_w) {
 }
 
 void UniWindowController::_on_window_focus_changed(bool focused) {
-    auto message = std::make_unique<WindowFocusChangedMessage>(focused);
-    MessageQueue::push_message(std::move(message));
+    if (g_controller_instance) {
+        g_controller_instance->emit_signal("window_focus_changed", focused);
+    }
 }
 
 void UniWindowController::_on_window_moved(float x, float y) {
-    auto message = std::make_unique<WindowMovedMessage>(x, y);
-    MessageQueue::push_message(std::move(message));
+    if (g_controller_instance) {
+        g_controller_instance->_position = Vector2(x, y);
+        g_controller_instance->emit_signal("window_moved", g_controller_instance->_position);
+    }
 }
 
 void UniWindowController::_on_window_resized(float width, float height) {
-    auto message = std::make_unique<WindowResizedMessage>(width, height);
-    MessageQueue::push_message(std::move(message));
+    if (g_controller_instance) {
+        g_controller_instance->_size = Vector2(width, height);
+        g_controller_instance->emit_signal("window_resized", g_controller_instance->_size);
+    }
 }
 
 void UniWindowController::_on_monitor_changed(int monitor_index) {
-    auto message = std::make_unique<MonitorChangedMessage>(monitor_index);
-    MessageQueue::push_message(std::move(message));
-}
-
-void UniWindowController::_process_messages() {
-    // 处理队列中的所有消息（除了FILES_DROPPED，现在直接处理）
-    while (!MessageQueue::is_empty()) {
-        auto message = MessageQueue::pop_message();
-        if (!message) {
-            break;
-        }
-        
-        switch (message->type) {
-            case MessageType::FILES_DROPPED: {
-                // Drop files 现在直接在回调中处理，这里不应该有这种消息
-                UtilityFunctions::print("WARNING: FILES_DROPPED message found in queue, this should not happen");
-                break;
-            }
-            
-            case MessageType::WINDOW_FOCUS_CHANGED: {
-                auto* focus_msg = static_cast<WindowFocusChangedMessage*>(message.get());
-                emit_signal("window_focus_changed", focus_msg->focused);
-                break;
-            }
-            
-            case MessageType::WINDOW_MOVED: {
-                auto* moved_msg = static_cast<WindowMovedMessage*>(message.get());
-                _position = Vector2(moved_msg->x, moved_msg->y);
-                emit_signal("window_moved", _position);
-                break;
-            }
-            
-            case MessageType::WINDOW_RESIZED: {
-                auto* resized_msg = static_cast<WindowResizedMessage*>(message.get());
-                _size = Vector2(resized_msg->width, resized_msg->height);
-                emit_signal("window_resized", _size);
-                break;
-            }
-            
-            case MessageType::MONITOR_CHANGED: {
-                auto* monitor_msg = static_cast<MonitorChangedMessage*>(message.get());
-                emit_signal("monitor_changed", monitor_msg->monitor_index);
-                break;
-            }
-        }
+    if (g_controller_instance) {
+        g_controller_instance->emit_signal("monitor_changed", monitor_index);
     }
 }
+
 
 // 新增的窗口控制方法实现
 void UniWindowController::set_window_title(const String& title) {

@@ -5,7 +5,6 @@
 #include <godot_cpp/variant/vector2.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <godot_cpp/variant/color.hpp>
-#include "uniwinc_message_queue.h"
 
 using namespace godot;
 
@@ -147,7 +146,6 @@ private:
     void _initialize_native();
     void _cleanup_native();
     void _update_from_native();
-    void _process_messages();
     
     // 回调处理
     static void _on_files_dropped(const wchar_t* file_paths_w);  // 宽字符版本，转换为UTF-8
