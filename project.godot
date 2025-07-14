@@ -25,6 +25,10 @@ window/size/always_on_top=true
 window/size/transparent=true
 window/per_pixel_transparency/allowed=true
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/uniwinc/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

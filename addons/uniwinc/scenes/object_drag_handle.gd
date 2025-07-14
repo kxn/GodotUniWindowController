@@ -279,8 +279,19 @@ func _get_animated_sprite2d_rect(anim_sprite: AnimatedSprite2D) -> Rect2:
 		
 	var texture_size = current_texture.get_size()
 	var sprite_size = texture_size * anim_sprite.scale
-	var sprite_pos = anim_sprite.position - sprite_size * anim_sprite.offset
+
+	# Sprite2D 默认是 centered=true，意味着位置是图片的中心点
+	var sprite_pos: Vector2
+	if anim_sprite.centered:
+		# 如果是居中锚点，需要减去一半大小来得到左上角位置
+		sprite_pos = anim_sprite.position - sprite_size / 2
+	else:
+		# 如果不是居中，position 就是左上角
+		sprite_pos = anim_sprite.position
 	
+	# 考虑 offset（这是额外的偏移）
+	sprite_pos -= sprite_size * anim_sprite.offset
+
 	return Rect2(sprite_pos, sprite_size)
 
 func _get_control_rect(control: Control) -> Rect2:
