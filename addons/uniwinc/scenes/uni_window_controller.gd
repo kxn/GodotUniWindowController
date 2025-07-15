@@ -400,6 +400,7 @@ func _apply_settings():
 	# 启动像素检测协程（类似Unity版本的HitTestCoroutine）
 	if is_hit_test_enabled and hit_test_type == 1:  # Opacity测试
 		_start_hit_test_coroutine()
+		_set_click_through_native(true)
 
 ## 核心点击透传更新逻辑 - 完全对应Unity版本的UpdateClickThrough()
 func _update_click_through():
