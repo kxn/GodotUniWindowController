@@ -9,3 +9,13 @@ windows.debug.x86_64 = "res://addons/uniwinc/bin/windows/libuniwincgd.dll"
 windows.release.x86_64 = "res://addons/uniwinc/bin/windows/libuniwincgd.dll"
 macos.debug = "res://addons/uniwinc/bin/macos/libuniwincgd.dylib"
 macos.release = "res://addons/uniwinc/bin/macos/libuniwincgd.dylib"
+
+
+[dependencies]
+
+windows.debug = {
+    "res://addons/uniwinc/bin/windows/LibUniWinC.dll" : ""
+}
+windows.release = {
+    "res://addons/uniwinc/bin/windows/LibUniWinC.dll" : ""
+}
