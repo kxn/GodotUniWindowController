@@ -4,3 +4,6 @@
 *.dblite
 SConstruct
 *.md
+*.obj
+*.exp
+*.lib
